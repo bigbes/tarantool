@@ -3732,8 +3732,11 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 			int col = pExpr->iColumn;
 			if (iTab < 0) {
 				if (pParse->ckBase > 0) {
+					sqlVdbeAddOp3(v, OP_Fetch,
+						      pParse->ckBase, col,
+						      target);
 					/* Generating CHECK constraints. */
-					return col + pParse->ckBase;
+					return target;
 				} else {
 					/* Coding an expression that is part of an index where column names
 					 * in the index refer to the table to which the index belongs

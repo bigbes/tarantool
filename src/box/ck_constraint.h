@@ -32,6 +32,8 @@
  */
 
 #include <stdint.h>
+#include "trigger.h"
+#include "sql.h"
 #include "small/rlist.h"
 
 #if defined(__cplusplus)
@@ -40,6 +42,7 @@ extern "C" {
 
 struct space;
 struct space_def;
+struct sql_stmt;
 struct Expr;
 
 /** The supported language of the ck constraint. */
@@ -81,12 +84,16 @@ struct ck_constraint {
 	/** The check constraint definition. */
 	struct ck_constraint_def *def;
 	/**
-	 * The check constraint expression AST is built for
-	 * ck_constraint::def::expr_str with sql_expr_compile
-	 * and resolved with sql_resolve_self_reference for
-	 * space with space[ck_constraint::space_id] definition.
+	 * Precompiled reusable VDBE program for processing check
+	 * constraints and setting bad exitcode and error
+	 * message when ck condition unsatisfied.
 	 */
-	struct Expr *expr;
+	struct sql_stmt *stmt;
+	/**
+	 * Trigger object executing check constraint before
+	 * insert and replace operations.
+	 */
+	struct trigger trigger;
 	/**
 	 * The id of the space this check constraint is
 	 * built for.
@@ -97,6 +104,13 @@ struct ck_constraint {
 	 * with space::ck_constraint.
 	 */
 	struct rlist link;
+	/**
+	 * Vdbe auxilary structure is used to pass new tuple
+	 * into existent VDBE.
+	 * Must be at the end of ck_constraint because fetcher
+	 * uses few bytes below to serve slots array.
+	 */
+	struct tuple_fetcher fetcher;
 };
 
 /**
