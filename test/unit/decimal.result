@@ -1,0 +1,51 @@
+1..50
+ok 1 - Basic construction from string.
+ok 2 - Correct construction and to_string conversion.
+ok 3 - Correct construction from INT_MAX.
+ok 4 - Simple conversion back to int INT_MAX
+ok 5 - Correct construction from INT_MIN.
+ok 6 - Simple conversion bact to int INT_MIN
+ok 7 - .5 Rounds up
+ok 8 - .49 Rounds down
+ok 9 - Precision too high. Rounding happens.
+ok 10 - Construction is correct.
+ok 11 - Precision too high and scale = 0. Cannot round
+ok 12 - Construncting the smallest possible number from string
+ok 13 - Correct representation of smallest possible number
+ok 14 - max > min
+ok 15 - min < max
+ok 16 - max == max
+ok 17 - Construction from negative numbers
+ok 18 - Correct construction for negatives
+ok 19 - Abs
+ok 20 - Correct abs
+ok 21 - Simple addition
+ok 22 - Simple addition is correct
+ok 23 - Simple subtraction
+ok 24 - Simple subtraction is correct
+ok 25 - Simple multiplication
+ok 26 - Simple multiplication is correct
+ok 27 - Simple division
+ok 28 - Simple division is correct
+ok 29 - sqrt
+ok 30 - sqrt is correct
+ok 31 - pow
+ok 32 - pow is correct
+ok 33 - exp
+ok 34 - exp is correct
+ok 35 - ln
+ok 36 - ln is correct
+ok 37 - log10
+ok 38 - log10 is correct
+ok 39 - Rounding when more than TARANTOOL_MAX_DECIMAL_DIGITS digits
+ok 40 - Rounding is correct
+ok 41 - Correct precision
+ok 42 - Correct scale
+ok 43 - Rounding too small number to zero
+ok 44 - Rounding is correct
+ok 45 - Correct precision
+ok 46 - Correct scale
+ok 47 - Rounding too small number to zero
+ok 48 - Rounding is correct
+ok 49 - Correct precision
+ok 50 - Correct scale
