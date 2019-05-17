@@ -711,7 +711,6 @@ tuple_format_reuse(struct tuple_format **p_format)
 	 * Make sure they're unset.
 	 */
 	assert(format->dict->name_count == 0);
-	assert(format->is_temporary);
 	mh_int_t key = mh_tuple_format_find(tuple_formats_hash, format,
 					    NULL);
 	if (key != mh_end(tuple_formats_hash)) {
@@ -737,7 +736,6 @@ tuple_format_add_to_hash(struct tuple_format *format)
 	if(!format->is_ephemeral)
 		return 0;
 	assert(format->dict->name_count == 0);
-	assert(format->is_temporary);
 	mh_int_t key = mh_tuple_format_put(tuple_formats_hash,
 					   (const struct tuple_format **)&format,
 					   NULL, NULL);
