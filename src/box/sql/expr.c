@@ -2958,28 +2958,22 @@ sqlCodeSubselect(Parse * pParse,	/* Parsing context */
  * Expr pIn is an IN(...) expression. This function checks that the
  * sub-select on the RHS of the IN() operator has the same number of
  * columns as the vector on the LHS. Or, if the RHS of the IN() is not
- * a sub-query, that the LHS is a vector of size 1.
+ * a sub-query, that the LHS must be a vector of size 1.
  */
 int
 sqlExprCheckIN(Parse * pParse, Expr * pIn)
 {
 	int nVector = sqlExprVectorSize(pIn->pLeft);
-	const char *err;
 	if ((pIn->flags & EP_xIsSelect)) {
 		if (nVector != pIn->x.pSelect->pEList->nExpr) {
-			err = "sub-select returns %d columns - expected %d";
 			int expr_count = pIn->x.pSelect->pEList->nExpr;
-			diag_set(ClientError, ER_SQL_PARSER_GENERIC,
-				 tt_sprintf(err, expr_count, nVector));
+			diag_set(ClientError, ER_SQL_COLUMN_COUNT, nVector,
+				 expr_count);
 			pParse->is_aborted = true;
 			return 1;
 		}
 	} else if (nVector != 1) {
-		assert((pIn->pLeft->flags & EP_xIsSelect) != 0);
-		int expr_count = pIn->pLeft->x.pSelect->pEList->nExpr;
-		err = tt_sprintf("sub-select returns %d columns - expected 1",
-				 expr_count);
-		diag_set(ClientError, ER_SQL_PARSER_GENERIC, err);
+		diag_set(ClientError, ER_SQL_COLUMN_COUNT, nVector, 1);
 		pParse->is_aborted = true;
 		return 1;
 	}
@@ -4153,10 +4147,8 @@ sqlExprCodeTarget(Parse * pParse, Expr * pExpr, int target)
 			testcase(op == TK_SELECT);
 			if (op == TK_SELECT
 			    && (nCol = pExpr->x.pSelect->pEList->nExpr) != 1) {
-				const char *err = "sub-select returns %d "\
-						  "columns - expected 1";
-				diag_set(ClientError, ER_SQL_PARSER_GENERIC,
-					 tt_sprintf(err, nCol));
+				diag_set(ClientError, ER_SQL_COLUMN_COUNT,
+					 nCol, 1);
 				pParse->is_aborted = true;
 			} else {
 				return sqlCodeSubselect(pParse, pExpr, 0);
