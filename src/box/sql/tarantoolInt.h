@@ -20,7 +20,7 @@ const void *tarantoolsqlPayloadFetch(BtCursor * pCur, u32 * pAmt);
 
 /**
  * Try to get a current tuple field using its field map.
- * @param pCur Btree cursor holding a tuple.
+ * @param tuple Tuple to process.
  * @param fieldno Number of a field to get.
  * @param[out] field_size Result field size.
  * @retval not NULL MessagePack field.
@@ -28,7 +28,8 @@ const void *tarantoolsqlPayloadFetch(BtCursor * pCur, u32 * pAmt);
  *         offset to @a fieldno.
  */
 const void *
-tarantoolsqlTupleColumnFast(BtCursor *pCur, u32 fieldno, u32 *field_size);
+tarantool_tuple_field_fast(struct tuple *tuple, uint32_t fieldno,
+			   uint32_t *field_size);
 
 int tarantoolsqlFirst(BtCursor * pCur, int *pRes);
 int tarantoolsqlLast(BtCursor * pCur, int *pRes);

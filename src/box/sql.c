@@ -182,18 +182,15 @@ const void *tarantoolsqlPayloadFetch(BtCursor *pCur, u32 *pAmt)
 }
 
 const void *
-tarantoolsqlTupleColumnFast(BtCursor *pCur, u32 fieldno, u32 *field_size)
+tarantool_tuple_field_fast(struct tuple *tuple, uint32_t fieldno,
+			   uint32_t *field_size)
 {
-	assert(pCur->curFlags & BTCF_TaCursor ||
-	       pCur->curFlags & BTCF_TEphemCursor);
-	assert(pCur->last_tuple != NULL);
-
-	struct tuple_format *format = tuple_format(pCur->last_tuple);
+	struct tuple_format *format = tuple_format(tuple);
 	if (fieldno >= tuple_format_field_count(format) ||
 	    tuple_format_field(format, fieldno)->offset_slot ==
 	    TUPLE_OFFSET_SLOT_NIL)
 		return NULL;
-	const char *field = tuple_field(pCur->last_tuple, fieldno);
+	const char *field = tuple_field(tuple, fieldno);
 	const char *end = field;
 	mp_next(&end);
 	*field_size = end - field;
@@ -1361,4 +1358,18 @@ sql_checks_resolve_space_def_reference(ExprList *expr_list,
 	int rc = parser.is_aborted ? -1 : 0;
 	sql_parser_destroy(&parser);
 	return rc;
+}
+
+void
+tuple_fetcher_create(struct tuple_fetcher *fetcher, struct tuple *tuple,
+		     const char *data, uint32_t data_sz)
+{
+	fetcher->tuple = tuple;
+	fetcher->data = data;
+	fetcher->data_sz = data_sz;
+
+	const char *field0 = data;
+	fetcher->field_count = mp_decode_array((const char **) &field0);
+	fetcher->slots[0] = (uint32_t)(field0 - data);
+	fetcher->rightmost_slot = 0;
 }

@@ -386,6 +386,52 @@ sql_src_list_entry_name(const struct SrcList *list, int i);
 void
 sqlSrcListDelete(struct sql *db, struct SrcList *list);
 
+/**
+ * Auxilary VDBE structure to speed-up tuple data field access.
+ * A memory allocation that manage this structure must have
+ * trailing unused bytes that extends the last 'slots' array.
+ * The amount of reserved memory should correspond to the problem
+ * to be solved and is usually equal to the greatest number of
+ * fields in the tuple.
+ *
+ * +------------------------+
+ * |  struct tuple_fetcher  |
+ * +------------------------+
+ * |     RESERVED MEMORY    |
+ * +------------------------+
+ */
+struct tuple_fetcher {
+	/** Tuple pointer or NULL when undefined. */
+	struct tuple *tuple;
+	/** Tuple data pointer. */
+	const char *data;
+	/** Tuple data size. */
+	uint32_t data_sz;
+	/** Count of fields in tuple. */
+	uint32_t field_count;
+	/**
+	 * Index of the rightmost initialized slot in slots
+	 * array.
+	 */
+	uint32_t rightmost_slot;
+	/**
+	 * Array of offsets of tuple fields.
+	 * Only values <= rightmost_slot are valid.
+	 */
+	uint32_t slots[1];
+};
+
+/**
+ * Initialize a new tuple_fetcher instance with given tuple
+ * data.
+ * @param fetcher The tuple_fetcher instance to initialize.
+ * @param tuple The tuple object pointer or NULL when undefined.
+ * @param data The tuple data (is always defined).
+ * @param data_sz The size of tuple data (is always defined).
+ */
+void
+tuple_fetcher_create(struct tuple_fetcher *fetcher, struct tuple *tuple,
+		     const char *data, uint32_t data_sz);
 
 #if defined(__cplusplus)
 } /* extern "C" { */
