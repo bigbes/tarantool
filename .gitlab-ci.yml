@@ -30,8 +30,9 @@ build_perf:
   script:
     - docker build --network=host -t $CI_REGISTRY/${CI_PROJECT_PATH}:ubuntu-bionic_built_${TVER} -f images/Dockerfile.ubuntu_perf_build .
     - docker push $CI_REGISTRY/${CI_PROJECT_PATH}:ubuntu-bionic_built_${TVER}
-    - docker run --rm --network=host -i $CI_REGISTRY/${CI_PROJECT_PATH}:ubuntu-bionic_built_${TVER} /bin/bash -c "perf/run-tarantool-server.sh && THREADS=4 /opt/runners/sysbench-benchmarking/run.sh"
     - docker run --rm --network=host -i $CI_REGISTRY/${CI_PROJECT_PATH}:ubuntu-bionic_built_${TVER} /bin/bash -c "/opt/runners/tpcc-benchmarking/run.sh"
-    - docker run --rm --network=host -i $CI_REGISTRY/${CI_PROJECT_PATH}:ubuntu-bionic_built_${TVER} /bin/bash -c "/opt/runners/ycsb-benchmarking/run.sh"
-    - docker run --rm --network=host -i $CI_REGISTRY/${CI_PROJECT_PATH}:ubuntu-bionic_built_${TVER} /bin/bash -c "/opt/runners/nosqlbench-benchmarking/run.sh"
+    - docker run --rm --network=host -i $CI_REGISTRY/${CI_PROJECT_PATH}:ubuntu-bionic_built_${TVER} /bin/bash -c "/opt/runners/tpcc-benchmarking/run.sh"
+    - docker run --rm --network=host -i $CI_REGISTRY/${CI_PROJECT_PATH}:ubuntu-bionic_built_${TVER} /bin/bash -c "/opt/runners/tpcc-benchmarking/run.sh"
+    - docker run --rm --network=host -i $CI_REGISTRY/${CI_PROJECT_PATH}:ubuntu-bionic_built_${TVER} /bin/bash -c "/opt/runners/tpcc-benchmarking/run.sh"
+    - docker run --rm --network=host -i $CI_REGISTRY/${CI_PROJECT_PATH}:ubuntu-bionic_built_${TVER} /bin/bash -c "/opt/runners/tpcc-benchmarking/run.sh"
 
