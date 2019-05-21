@@ -99,7 +99,7 @@ char *sql_data_directory = 0;
 int
 sql_initialize(void)
 {
-	int rc = SQL_OK;
+	int rc = 0;
 
 	/* If the following assert() fails on some obscure processor/compiler
 	 * combination, the work-around is to set the correct pointer
@@ -113,17 +113,17 @@ sql_initialize(void)
 	 * of this routine.
 	 */
 	if (sqlGlobalConfig.isInit)
-		return SQL_OK;
+		return 0;
 
 	if (!sqlGlobalConfig.isMallocInit)
 		sqlMallocInit();
-	if (rc == SQL_OK)
+	if (rc == 0)
 		sqlGlobalConfig.isMallocInit = 1;
 
-	/* If rc is not SQL_OK at this point, then the malloc
+	/* If rc is not 0 at this point, then the malloc
 	 * subsystem could not be initialized.
 	 */
-	if (rc != SQL_OK)
+	if (rc != 0)
 		return rc;
 
 	/* Do the rest of the initialization
@@ -144,10 +144,10 @@ sql_initialize(void)
 		memset(&sqlBuiltinFunctions, 0,
 		       sizeof(sqlBuiltinFunctions));
 		sqlRegisterBuiltinFunctions();
-		if (rc == SQL_OK) {
+		if (rc == 0) {
 			rc = sqlOsInit();
 		}
-		if (rc == SQL_OK) {
+		if (rc == 0) {
 			sqlGlobalConfig.isInit = 1;
 		}
 		sqlGlobalConfig.inProgress = 0;
@@ -160,7 +160,7 @@ sql_initialize(void)
 	 */
 #ifndef NDEBUG
 	/* This section of code's only "output" is via assert() statements. */
-	if (rc == SQL_OK) {
+	if (rc == 0) {
 		u64 x = (((u64) 1) << 63) - 1;
 		double y;
 		assert(sizeof(x) == 8);
@@ -175,7 +175,7 @@ sql_initialize(void)
 
 /*
  * Set up the lookaside buffers for a database connection.
- * Return SQL_OK on success.
+ * Return 0 on success.
  * If lookaside is already active, return SQL_BUSY.
  *
  * The sz parameter is the number of bytes in each lookaside slot.
@@ -242,7 +242,7 @@ setupLookaside(sql * db, void *pBuf, int sz, int cnt)
 		db->lookaside.bMalloced = 0;
 	}
 #endif				/* SQL_OMIT_LOOKASIDE */
-	return SQL_OK;
+	return 0;
 }
 
 void
@@ -284,7 +284,7 @@ functionDestroy(sql * db, FuncDef * p)
 }
 
 /*
- * Rollback all database files.  If tripCode is not SQL_OK, then
+ * Rollback all database files.  If tripCode is not 0, then
  * any write cursors are invalidated ("tripped" - as in "tripping a circuit
  * breaker") and made to return tripCode if there are any further
  * attempts to use that cursor.  Read cursors remain open and valid
@@ -375,7 +375,7 @@ sqlCreateFunc(sql * db,
 	p->pUserData = pUserData;
 	p->nArg = (u16) nArg;
 	p->ret_type = type;
-	return SQL_OK;
+	return 0;
 }
 
 int
@@ -410,7 +410,7 @@ sql_create_function_v2(sql * db,
 	rc = sqlCreateFunc(db, zFunc, type, nArg, flags, p, xSFunc, xStep,
 			       xFinal, pArg);
 	if (pArg && pArg->nRef == 0) {
-		assert(rc != SQL_OK);
+		assert(rc != 0);
 		xDestroy(p);
 		sqlDbFree(db, pArg);
 	}
@@ -436,7 +436,7 @@ sql_trace_v2(sql * db,		/* Trace this connection */
 	db->mTrace = mTrace;
 	db->xTrace = xTrace;
 	db->pTraceArg = pArg;
-	return SQL_OK;
+	return 0;
 }
 
 #endif				/* SQL_OMIT_TRACE */
@@ -638,7 +638,7 @@ opendb_out:
 	assert(db != 0 || rc == SQL_NOMEM);
 	if (rc == SQL_NOMEM)
 		db = NULL;
-	else if (rc != SQL_OK)
+	else if (rc != 0)
 		db->magic = SQL_MAGIC_SICK;
 
 	*out_db = db;

@@ -147,7 +147,7 @@ sqlVdbeMemGrow(Mem * pMem, int n, int bPreserve)
 
 	pMem->z = pMem->zMalloc;
 	pMem->flags &= ~(MEM_Dyn | MEM_Ephem | MEM_Static);
-	return SQL_OK;
+	return 0;
 }
 
 /*
@@ -160,7 +160,7 @@ sqlVdbeMemGrow(Mem * pMem, int n, int bPreserve)
  * and MEM_Blob values may be discarded, MEM_Int, MEM_Real, and MEM_Null
  * values are preserved.
  *
- * Return SQL_OK on success or an error code (probably SQL_NOMEM)
+ * Return 0 on success or an error code (probably SQL_NOMEM)
  * if unable to complete the resizing.
  */
 int
@@ -174,14 +174,14 @@ sqlVdbeMemClearAndResize(Mem * pMem, int szNew)
 	assert((pMem->flags & MEM_Dyn) == 0);
 	pMem->z = pMem->zMalloc;
 	pMem->flags &= (MEM_Null | MEM_Int | MEM_Real);
-	return SQL_OK;
+	return 0;
 }
 
 /*
  * Change pMem so that its MEM_Str or MEM_Blob value is stored in
  * MEM.zMalloc, where it can be safely written.
  *
- * Return SQL_OK on success or SQL_NOMEM if malloc fails.
+ * Return 0 on success or SQL_NOMEM if malloc fails.
  */
 int
 sqlVdbeMemMakeWriteable(Mem * pMem)
@@ -203,7 +203,7 @@ sqlVdbeMemMakeWriteable(Mem * pMem)
 	pMem->pScopyFrom = 0;
 #endif
 
-	return SQL_OK;
+	return 0;
 }
 
 /*
@@ -230,7 +230,7 @@ sqlVdbeMemExpandBlob(Mem * pMem)
 	memset(&pMem->z[pMem->n], 0, pMem->u.nZero);
 	pMem->n += pMem->u.nZero;
 	pMem->flags &= ~(MEM_Zero | MEM_Term);
-	return SQL_OK;
+	return 0;
 }
 #endif
 
@@ -247,7 +247,7 @@ vdbeMemAddTerminator(Mem * pMem)
 	pMem->z[pMem->n] = 0;
 	pMem->z[pMem->n + 1] = 0;
 	pMem->flags |= MEM_Term;
-	return SQL_OK;
+	return 0;
 }
 
 /*
@@ -259,7 +259,7 @@ sqlVdbeMemNulTerminate(Mem * pMem)
 	testcase((pMem->flags & (MEM_Term | MEM_Str)) == (MEM_Term | MEM_Str));
 	testcase((pMem->flags & (MEM_Term | MEM_Str)) == 0);
 	if ((pMem->flags & (MEM_Term | MEM_Str)) != MEM_Str) {
-		return SQL_OK;	/* Nothing to do */
+		return 0;	/* Nothing to do */
 	} else {
 		return vdbeMemAddTerminator(pMem);
 	}
@@ -286,7 +286,7 @@ sqlVdbeMemStringify(Mem * pMem, u8 bForce)
 	const int nByte = 32;
 
 	if ((fg & (MEM_Null | MEM_Str | MEM_Blob)) != 0)
-		return SQL_OK;
+		return 0;
 
 	assert(!(fg & MEM_Zero));
 	assert(fg & (MEM_Int | MEM_Real | MEM_Bool));
@@ -307,7 +307,7 @@ sqlVdbeMemStringify(Mem * pMem, u8 bForce)
 	pMem->flags |= MEM_Str | MEM_Term;
 	if (bForce)
 		pMem->flags &= ~(MEM_Int | MEM_Real);
-	return SQL_OK;
+	return 0;
 }
 
 /*
@@ -567,7 +567,7 @@ sqlVdbeMemRealify(Mem * pMem)
 
 	pMem->u.r = v;
 	MemSetTypeFlag(pMem, MEM_Real);
-	return SQL_OK;
+	return 0;
 }
 
 /*
@@ -596,7 +596,7 @@ sqlVdbeMemNumerify(Mem * pMem)
 	}
 	assert((pMem->flags & (MEM_Int | MEM_Real | MEM_Null)) != 0);
 	pMem->flags &= ~(MEM_Str | MEM_Blob | MEM_Zero);
-	return SQL_OK;
+	return 0;
 }
 
 /**
@@ -646,7 +646,7 @@ sqlVdbeMemCast(Mem * pMem, enum field_type type)
 {
 	assert(type < field_type_MAX);
 	if (pMem->flags & MEM_Null)
-		return SQL_OK;
+		return 0;
 	if ((pMem->flags & MEM_Blob) != 0 && type == FIELD_TYPE_NUMBER) {
 		if (sql_atoi64(pMem->z, (int64_t *) &pMem->u.i, pMem->n) == 0) {
 			MemSetTypeFlag(pMem, MEM_Real);
@@ -702,7 +702,7 @@ sqlVdbeMemCast(Mem * pMem, enum field_type type)
 			sql_value_apply_type(pMem, FIELD_TYPE_STRING);
 		assert(pMem->flags & MEM_Str || pMem->db->mallocFailed);
 		pMem->flags &= ~(MEM_Int | MEM_Real | MEM_Blob | MEM_Zero);
-		return SQL_OK;
+		return 0;
 	}
 }
 
@@ -893,7 +893,7 @@ sqlVdbeMemShallowCopy(Mem * pTo, const Mem * pFrom, int srcType)
 int
 sqlVdbeMemCopy(Mem * pTo, const Mem * pFrom)
 {
-	int rc = SQL_OK;
+	int rc = 0;
 
 	if (VdbeMemDynamic(pTo))
 		vdbeMemClearExternAndSetNull(pTo);
@@ -956,7 +956,7 @@ sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
 	/* If z is a NULL pointer, set pMem to contain an SQL NULL. */
 	if (!z) {
 		sqlVdbeMemSetNull(pMem);
-		return SQL_OK;
+		return 0;
 	}
 
 	if (pMem->db) {
@@ -1010,7 +1010,7 @@ sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
 		return SQL_TOOBIG;
 	}
 
-	return SQL_OK;
+	return 0;
 }
 
 /*
@@ -1037,9 +1037,9 @@ vdbeMemFromBtreeResize(BtCursor * pCur,	/* Cursor pointing at record to retrieve
 {
 	int rc;
 	pMem->flags = MEM_Null;
-	if (SQL_OK == (rc = sqlVdbeMemClearAndResize(pMem, amt + 2))) {
+	if (0 == (rc = sqlVdbeMemClearAndResize(pMem, amt + 2))) {
 		rc = sqlCursorPayload(pCur, offset, amt, pMem->z);
-		if (rc == SQL_OK) {
+		if (rc == 0) {
 			pMem->z[amt] = 0;
 			pMem->z[amt + 1] = 0;
 			pMem->flags = MEM_Blob | MEM_Term;
@@ -1060,7 +1060,7 @@ sqlVdbeMemFromBtree(BtCursor * pCur,	/* Cursor pointing at record to retrieve. *
 {
 	char *zData;		/* Data from the btree layer */
 	u32 available = 0;	/* Number of bytes available on the local btree page */
-	int rc = SQL_OK;	/* Return code */
+	int rc = 0;	/* Return code */
 
 	assert(sqlCursorIsValid(pCur));
 	assert(!VdbeMemDynamic(pMem));
@@ -1212,13 +1212,13 @@ valueNew(sql * db, struct ValueNewStat4Ctx *p)
  *
  * then this routine attempts to invoke the SQL function. Assuming no
  * error occurs, output parameter (*ppVal) is set to point to a value
- * object containing the result before returning SQL_OK.
+ * object containing the result before returning 0.
  *
  * Type @type is applied to the result of the function before returning.
  * If the result is a text value, the sql_value object uses encoding
  * enc.
  *
- * If the conditions above are not met, this function returns SQL_OK
+ * If the conditions above are not met, this function returns 0
  * and sets (*ppVal) to NULL. Or, if an error occurs, (*ppVal) is set to
  * NULL and an sql error code returned.
  */
@@ -1235,7 +1235,7 @@ valueFromFunction(sql * db,	/* The database connection */
 	int nVal = 0;		/* Size of apVal[] array */
 	FuncDef *pFunc = 0;	/* Function definition */
 	sql_value *pVal = 0;	/* New value */
-	int rc = SQL_OK;	/* Return code */
+	int rc = 0;	/* Return code */
 	ExprList *pList = 0;	/* Function arguments */
 	int i;			/* Iterator variable */
 
@@ -1249,7 +1249,7 @@ valueFromFunction(sql * db,	/* The database connection */
 	if ((pFunc->funcFlags & (SQL_FUNC_CONSTANT | SQL_FUNC_SLOCHNG)) ==
 	    0 || (pFunc->funcFlags & SQL_FUNC_NEEDCOLL)
 	    ) {
-		return SQL_OK;
+		return 0;
 	}
 
 	if (pList) {
@@ -1264,7 +1264,7 @@ valueFromFunction(sql * db,	/* The database connection */
 		for (i = 0; i < nVal; i++) {
 			rc = sqlValueFromExpr(db, pList->a[i].pExpr,
 						  type, &apVal[i]);
-			if (apVal[i] == 0 || rc != SQL_OK)
+			if (apVal[i] == 0 || rc != 0)
 				goto value_from_function_out;
 		}
 	}
@@ -1282,10 +1282,10 @@ valueFromFunction(sql * db,	/* The database connection */
 	pFunc->xSFunc(&ctx, nVal, apVal);
 	assert(!ctx.is_aborted);
 	sql_value_apply_type(pVal, type);
-	assert(rc == SQL_OK);
+	assert(rc == 0);
 
  value_from_function_out:
-	if (rc != SQL_OK) {
+	if (rc != 0) {
 		pVal = 0;
 	}
 	if (apVal) {
@@ -1322,7 +1322,7 @@ valueFromExpr(sql * db,	/* The database connection */
 	sql_value *pVal = 0;
 	int negInt = 1;
 	const char *zNeg = "";
-	int rc = SQL_OK;
+	int rc = 0;
 
 	assert(pExpr != 0);
 	while ((op = pExpr->op) == TK_UPLUS || op == TK_SPAN)
@@ -1339,7 +1339,7 @@ valueFromExpr(sql * db,	/* The database connection */
 
 	if (op == TK_CAST) {
 		rc = valueFromExpr(db, pExpr->pLeft, pExpr->type, ppVal, pCtx);
-		testcase(rc != SQL_OK);
+		testcase(rc != 0);
 		if (*ppVal) {
 			sqlVdbeMemCast(*ppVal, pExpr->type);
 			sql_value_apply_type(*ppVal, type);
@@ -1383,10 +1383,10 @@ valueFromExpr(sql * db,	/* The database connection */
 			pVal->flags &= ~MEM_Str;
 	} else if (op == TK_UMINUS) {
 		/* This branch happens for multiple negative signs.  Ex: -(-5) */
-		if (SQL_OK ==
+		if (0 ==
 		    sqlValueFromExpr(db, pExpr->pLeft, type, &pVal)
 		    && pVal != 0) {
-			if ((rc = sqlVdbeMemNumerify(pVal)) != SQL_OK)
+			if ((rc = sqlVdbeMemNumerify(pVal)) != 0)
 				return rc;
 			if (pVal->flags & MEM_Real) {
 				pVal->u.r = -pVal->u.r;
@@ -1402,7 +1402,7 @@ valueFromExpr(sql * db,	/* The database connection */
 		pVal = valueNew(db, pCtx);
 		if (pVal == 0)
 			goto no_mem;
-		if ((rc = sqlVdbeMemNumerify(pVal)) != SQL_OK)
+		if ((rc = sqlVdbeMemNumerify(pVal)) != 0)
 			return rc;
 	}
 #ifndef SQL_OMIT_BLOB_LITERAL
@@ -1534,7 +1534,7 @@ stat4ValueFromExpr(Parse * pParse,	/* Parse context */
 		   sql_value ** ppVal	/* OUT: New value object (or NULL) */
     )
 {
-	int rc = SQL_OK;
+	int rc = 0;
 	sql_value *pVal = 0;
 	sql *db = pParse->db;
 
@@ -1558,7 +1558,7 @@ stat4ValueFromExpr(Parse * pParse,	/* Parse context */
 			if (pVal) {
 				rc = sqlVdbeMemCopy((Mem *) pVal,
 							&v->aVar[iBindVar - 1]);
-				if (rc == SQL_OK) {
+				if (rc == 0) {
 					sql_value_apply_type(pVal, type);
 				}
 				pVal->db = pParse->db;
@@ -1603,7 +1603,7 @@ stat4ValueFromExpr(Parse * pParse,	/* Parse context */
  * is NULL and a value can be successfully extracted, a new UnpackedRecord
  * is allocated (and *ppRec set to point to it) before returning.
  *
- * Unless an error is encountered, SQL_OK is returned. It is not an
+ * Unless an error is encountered, 0 is returned. It is not an
  * error if a value cannot be extracted from pExpr. If an error does
  * occur, an sql error code is returned.
  */
@@ -1617,7 +1617,7 @@ sqlStat4ProbeSetValue(Parse * pParse,	/* Parse context */
 			  int *pnExtract	/* OUT: Values appended to the record */
     )
 {
-	int rc = SQL_OK;
+	int rc = 0;
 	int nExtract = 0;
 
 	if (pExpr == 0 || pExpr->op != TK_SELECT) {
@@ -1652,8 +1652,8 @@ sqlStat4ProbeSetValue(Parse * pParse,	/* Parse context */
  * as described for sqlStat4ProbeSetValue() above.
  *
  * If successful, set *ppVal to point to a new value object and return
- * SQL_OK. If no value can be extracted, but no other error occurs
- * (e.g. OOM), return SQL_OK and set *ppVal to NULL. Or, if an error
+ * 0. If no value can be extracted, but no other error occurs
+ * (e.g. OOM), return 0 and set *ppVal to NULL. Or, if an error
  * does occur, return an sql error code. The final value of *ppVal
  * is undefined in this case.
  */
