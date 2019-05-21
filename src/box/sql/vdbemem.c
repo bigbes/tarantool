@@ -939,7 +939,7 @@ sqlVdbeMemMove(Mem * pTo, Mem * pFrom)
  * size limit) then no memory allocation occurs.  If the string can be
  * stored without allocating memory, then it is.  If a memory allocation
  * is required to store the string, then value of pMem is unchanged.  In
- * either case, SQL_TOOBIG is returned.
+ * either case, error is returned.
  */
 int
 sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
@@ -983,7 +983,9 @@ sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
 			nAlloc += 1; //SQL_UTF8
 		}
 		if (nByte > iLimit) {
-			return SQL_TOOBIG;
+			diag_set(ClientError, ER_SQL_EXECUTE, "string or blob "\
+				 "is too big");
+			return SQL_TARANTOOL_ERROR;
 		}
 		testcase(nAlloc == 0);
 		testcase(nAlloc == 31);
@@ -1007,7 +1009,9 @@ sqlVdbeMemSetStr(Mem * pMem,	/* Memory cell to set to string value */
 	pMem->flags = flags;
 
 	if (nByte > iLimit) {
-		return SQL_TOOBIG;
+		diag_set(ClientError, ER_SQL_EXECUTE, "string or blob is too "\
+			 "big");
+		return SQL_TARANTOOL_ERROR;
 	}
 
 	return 0;
