@@ -173,78 +173,6 @@ sql_initialize(void)
 	return rc;
 }
 
-/*
- * Set up the lookaside buffers for a database connection.
- * Return 0 on success.
- * If lookaside is already active, return SQL_BUSY.
- *
- * The sz parameter is the number of bytes in each lookaside slot.
- * The cnt parameter is the number of slots.  If pStart is NULL the
- * space for the lookaside memory is obtained from sql_malloc().
- * If pStart is not NULL then it is sz*cnt bytes of memory to use for
- * the lookaside memory.
- */
-static int
-setupLookaside(sql * db, void *pBuf, int sz, int cnt)
-{
-#ifndef SQL_OMIT_LOOKASIDE
-	void *pStart;
-	if (db->lookaside.nOut) {
-		return SQL_BUSY;
-	}
-	/* Free any existing lookaside buffer for this handle before
-	 * allocating a new one so we don't have to have space for
-	 * both at the same time.
-	 */
-	if (db->lookaside.bMalloced) {
-		sql_free(db->lookaside.pStart);
-	}
-	/* The size of a lookaside slot after ROUNDDOWN8 needs to be larger
-	 * than a pointer to be useful.
-	 */
-	sz = ROUNDDOWN8(sz);	/* IMP: R-33038-09382 */
-	if (sz <= (int)sizeof(LookasideSlot *))
-		sz = 0;
-	if (cnt < 0)
-		cnt = 0;
-	if (sz == 0 || cnt == 0) {
-		sz = 0;
-		pStart = 0;
-	} else if (pBuf == 0) {
-		sqlBeginBenignMalloc();
-		pStart = sqlMalloc(sz * cnt);	/* IMP: R-61949-35727 */
-		sqlEndBenignMalloc();
-		if (pStart)
-			cnt = sqlMallocSize(pStart) / sz;
-	} else {
-		pStart = pBuf;
-	}
-	db->lookaside.pStart = pStart;
-	db->lookaside.pFree = 0;
-	db->lookaside.sz = (u16) sz;
-	if (pStart) {
-		int i;
-		LookasideSlot *p;
-		assert(sz > (int)sizeof(LookasideSlot *));
-		p = (LookasideSlot *) pStart;
-		for (i = cnt - 1; i >= 0; i--) {
-			p->pNext = db->lookaside.pFree;
-			db->lookaside.pFree = p;
-			p = (LookasideSlot *) & ((u8 *) p)[sz];
-		}
-		db->lookaside.pEnd = p;
-		db->lookaside.bDisable = 0;
-		db->lookaside.bMalloced = pBuf == 0 ? 1 : 0;
-	} else {
-		db->lookaside.pStart = db;
-		db->lookaside.pEnd = db;
-		db->lookaside.bDisable = 1;
-		db->lookaside.bMalloced = 0;
-	}
-#endif				/* SQL_OMIT_LOOKASIDE */
-	return 0;
-}
-
 void
 sql_row_count(struct sql_context *context, MAYBE_UNUSED int unused1,
 	      MAYBE_UNUSED sql_value **unused2)
@@ -338,7 +266,7 @@ sqlCreateFunc(sql * db,
 
 
 	/* Check if an existing function is being overridden or deleted. If so,
-	 * and there are active VMs, then return SQL_BUSY. If a function
+	 * and there are active VMs, then return an error. If a function
 	 * is being overridden/deleted but there are no active VMs, allow the
 	 * operation to continue but invalidate all precompiled statements.
 	 */
@@ -629,10 +557,6 @@ sql_init_db(sql **out_db)
 	 * is accessed.
 	 */
 	sqlRegisterPerConnectionBuiltinFunctions(db);
-
-	/* Enable the lookaside-malloc subsystem */
-	setupLookaside(db, 0, sqlGlobalConfig.szLookaside,
-		       sqlGlobalConfig.nLookaside);
 
 opendb_out:
 	assert(db != 0 || rc == SQL_NOMEM);

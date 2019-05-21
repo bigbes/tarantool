@@ -420,18 +420,7 @@ sqlScratchFree(void *p)
 	}
 }
 
-/*
- * TRUE if p is a lookaside memory allocation from db
- */
-#ifndef SQL_OMIT_LOOKASIDE
-static int
-isLookaside(sql * db, void *p)
-{
-	return SQL_WITHIN(p, db->lookaside.pStart, db->lookaside.pEnd);
-}
-#else
 #define isLookaside(A,B) 0
-#endif
 
 /*
  * Return the size of a memory allocation previously obtained from
@@ -448,21 +437,18 @@ int
 sqlDbMallocSize(sql * db, void *p)
 {
 	assert(p != 0);
-	if (db == 0 || !isLookaside(db, p)) {
 #if SQL_DEBUG
-		if (db == 0) {
-			assert(sqlMemdebugNoType(p, (u8) ~ MEMTYPE_HEAP));
-			assert(sqlMemdebugHasType(p, MEMTYPE_HEAP));
-		} else {
-			assert(sqlMemdebugHasType
-			       (p, (MEMTYPE_LOOKASIDE | MEMTYPE_HEAP)));
-			assert(sqlMemdebugNoType
-			       (p, (u8) ~ (MEMTYPE_LOOKASIDE | MEMTYPE_HEAP)));
-		}
+	if (db == 0) {
+		assert(sqlMemdebugNoType(p, (u8) ~ MEMTYPE_HEAP));
+		assert(sqlMemdebugHasType(p, MEMTYPE_HEAP));
+	} else {
+		assert(sqlMemdebugHasType
+		       (p, (MEMTYPE_LOOKASIDE | MEMTYPE_HEAP)));
+		assert(sqlMemdebugNoType
+		       (p, (u8) ~ (MEMTYPE_LOOKASIDE | MEMTYPE_HEAP)));
+	}
 #endif
 		return sql_sized_sizeof(p);
-	} else
-		return db->lookaside.sz;
 }
 
 sql_uint64
@@ -514,17 +500,6 @@ sqlDbFree(sql * db, void *p)
 	if (db) {
 		if (db->pnBytesFreed) {
 			measureAllocationSize(db, p);
-			return;
-		}
-		if (isLookaside(db, p)) {
-			LookasideSlot *pBuf = (LookasideSlot *) p;
-#if SQL_DEBUG
-			/* Trash all content in the buffer being freed */
-			memset(p, 0xaa, db->lookaside.sz);
-#endif
-			pBuf->pNext = db->lookaside.pFree;
-			db->lookaside.pFree = pBuf;
-			db->lookaside.nOut--;
 			return;
 		}
 	}
@@ -729,8 +704,6 @@ sqlDbRealloc(sql * db, void *p, u64 n)
 	assert(db != 0);
 	if (p == 0)
 		return sqlDbMallocRawNN(db, n);
-	if (isLookaside(db, p) && n <= db->lookaside.sz)
-		return p;
 	return dbReallocFinish(db, p, n);
 }
 
@@ -741,27 +714,18 @@ dbReallocFinish(sql * db, void *p, u64 n)
 	assert(db != 0);
 	assert(p != 0);
 	if (db->mallocFailed == 0) {
-		if (isLookaside(db, p)) {
-			pNew = sqlDbMallocRawNN(db, n);
-			if (pNew) {
-				memcpy(pNew, p, db->lookaside.sz);
-				sqlDbFree(db, p);
-			}
-		} else {
-			assert(sqlMemdebugHasType
-			       (p, (MEMTYPE_LOOKASIDE | MEMTYPE_HEAP)));
-			assert(sqlMemdebugNoType
-			       (p, (u8) ~ (MEMTYPE_LOOKASIDE | MEMTYPE_HEAP)));
-			sqlMemdebugSetType(p, MEMTYPE_HEAP);
-			pNew = sql_realloc64(p, n);
-			if (!pNew) {
-				sqlOomFault(db);
-			}
-			sqlMemdebugSetType(pNew,
-					       (db->lookaside.bDisable ==
-						0 ? MEMTYPE_LOOKASIDE :
-						MEMTYPE_HEAP));
+		assert(sqlMemdebugHasType
+		       (p, (MEMTYPE_LOOKASIDE | MEMTYPE_HEAP)));
+		assert(sqlMemdebugNoType
+		       (p, (u8) ~ (MEMTYPE_LOOKASIDE | MEMTYPE_HEAP)));
+		sqlMemdebugSetType(p, MEMTYPE_HEAP);
+		pNew = sql_realloc64(p, n);
+		if (!pNew) {
+			sqlOomFault(db);
 		}
+		sqlMemdebugSetType(pNew, (db->lookaside.bDisable == 0 ?
+					  MEMTYPE_LOOKASIDE :
+					  MEMTYPE_HEAP));
 	}
 	return pNew;
 }
